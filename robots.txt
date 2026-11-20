@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://nile-post.vercel.app/sitemap.xml
+Sitemap: https://thenilepen.com/sitemap.xml
