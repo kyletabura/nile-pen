@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://YOUR-USERNAME.github.io/the-nile-pen/sitemap.xml
+Sitemap: https://nile-post.vercel.app/sitemap.xml
