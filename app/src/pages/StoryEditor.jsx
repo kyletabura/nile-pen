@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useBlocker } from 'react-router-dom';
 import {
   ArrowLeft, Eye, ImagePlus, Trash2, Archive, Send, Save, Undo2, ExternalLink, Crop, X, Link2, Star, CheckCircle2, Info,
@@ -7,6 +7,7 @@ import { supabase, must, requestPublish, SITE_URL } from '../lib/supabase.js';
 import { useAuth, bump } from '../lib/auth.jsx';
 import { Badge, Btn, Dialog, Switch, confirmAction, useToast, SkeletonRows, TONE } from '../components/ui.jsx';
 import { MediaPicker, ImageEditor } from '../components/Media.jsx';
+import { markGuideStep } from '../components/GettingStarted.jsx';
 import { slugify, today, words, readTime, bodyToText, textToBody, fmtDateLong, isUrl } from '../lib/util.js';
 
 const blank = (brief, editor) => ({
@@ -31,6 +32,11 @@ export default function StoryEditor({ brief: briefRoute = false }) {
   const [preview, setPreview] = useState(false);
   const [errors, setErrors] = useState({});
   const bodyRef = useRef(null);
+  const paperRef = useRef(null);
+  // size the headline, standfirst and body boxes to their text (on load, on change, on resize)
+  const fitAll = () => paperRef.current?.querySelectorAll('textarea').forEach((t) => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; });
+  useLayoutEffect(fitAll, [f?.title, f?.dek, f?.bodyText, !!f]);
+  useEffect(() => { window.addEventListener('resize', fitAll); document.fonts?.ready.then(fitAll); return () => window.removeEventListener('resize', fitAll); }, []);
 
   useEffect(() => {
     (async () => {
@@ -112,7 +118,7 @@ export default function StoryEditor({ brief: briefRoute = false }) {
           action: next === 'published' ? { label: 'View', run: () => window.open(SITE_URL + '/article/' + res.slug, '_blank', 'noopener') } : undefined,
         });
       } else if (!quiet) toast('Draft saved.');
-      bump();
+      bump(); markGuideStep('story');
       if (isNew) nav(base + '/' + res.id, { replace: true });
       return res;
     } catch (e) { toast.error(e); return null; } finally { setBusy(''); }
@@ -157,7 +163,7 @@ export default function StoryEditor({ brief: briefRoute = false }) {
       </div>
 
       <div className="editor">
-        <article className="card editor-paper">
+        <article className="card editor-paper" ref={paperRef}>
           <div className="chips" aria-label="Topics">
             {topics.map((t) => {
               const on = f.topics.includes(t.slug); const primary = f.topics[0] === t.slug;

@@ -56,21 +56,22 @@ export default function Login() {
   return (
     <div className="login">
       <section className="login-art" aria-hidden="true">
+        {/* Placeholder: the stock wetland photo the public site uses for "The Forgotten Floods". Swap for The Nile Pen's own photography (public/sign-in-photo.jpg). */}
+        <img className="photo" alt="" decoding="async"
+          src="/sign-in-photo.jpg" />
         <svg className="waves" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid slice">
-          {Array.from({ length: 12 }, (_, i) => {
-            const y = 60 + i * 72;
-            return <path key={i} d={`M-60 ${y} C 220 ${y - 90}, 520 ${y + 120}, 880 ${y - 20}`} fill="none"
-              stroke={i === 6 ? '#c4262e' : '#ffffff'} strokeOpacity={i === 6 ? 0.9 : 0.08} strokeWidth={i === 6 ? 5 : 2} />;
-          })}
+          <path d="M-60 540 C 220 450, 520 660, 880 520" fill="none" stroke="#c4262e" strokeOpacity="0.9" strokeWidth="5" />
         </svg>
         <div className="row" style={{ position: 'relative' }}>
           <span className="brand-mark">N</span>
           <span className="brand-name" style={{ color: '#fff' }}>The Nile Pen</span>
         </div>
-        <p className="quote">Independent voices, edited with care.</p>
-        <p style={{ position: 'relative', color: '#b9bec4', margin: 0, maxWidth: '38ch' }}>
-          The newsroom for thenilepen.com. Write stories, post Live updates, review pitches and publish to the site.
-        </p>
+        <div style={{ position: 'relative' }}>
+          <p className="quote" style={{ margin: 0 }}>Independent voices, edited with care.</p>
+          <p className="blurb" style={{ color: '#e3e5e8', margin: '14px 0 0', maxWidth: '40ch' }}>
+            The newsroom for thenilepen.com. Write stories, post Live updates, review pitches and publish to the site.
+          </p>
+        </div>
       </section>
       <section className="login-form">
         {mode === 'signin' && (

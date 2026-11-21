@@ -4,6 +4,7 @@ import { FileText, Radio, PenLine, Inbox, Users, Mail, ArrowRight, CheckCircle2,
 import { supabase } from '../lib/supabase.js';
 import { useAuth, useStats } from '../lib/auth.jsx';
 import { Badge, Empty, SkeletonRows, Thumb } from '../components/ui.jsx';
+import { GettingStarted, WelcomeDialog } from '../components/GettingStarted.jsx';
 import { fmtDate, timeAgo } from '../lib/util.js';
 
 export default function Overview() {
@@ -62,6 +63,9 @@ export default function Overview() {
           <Link className="btn sm dark" to="/settings">Turn it on</Link>
         </div>
       )}
+
+      <WelcomeDialog name={editor?.name} />
+      <GettingStarted />
 
       <div className="grid kpis">
         {kpis.map((k) => (

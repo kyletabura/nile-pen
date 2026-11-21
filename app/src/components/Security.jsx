@@ -60,8 +60,8 @@ export function PasswordForm({ email, submitLabel = 'Save password', onDone }) {
       {a && <Meter score={check.score} />}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 4 }}>
         {check.rules.map((r) => (
-          <li key={r.text} className="row" style={{ gap: 8, fontSize: 13, color: r.ok ? 'var(--green)' : 'var(--body)', fontWeight: 700 }}>
-            {r.ok ? <Check size={15} /> : <X size={15} color="#b9bec4" />}{r.text}
+          <li key={r.text} className="row" style={{ gap: 8, fontSize: 13, color: a && r.ok ? 'var(--green)' : 'var(--body)', fontWeight: 700 }}>
+            {a && r.ok ? <Check size={15} /> : <X size={15} color="#b9bec4" />}{r.text}
           </li>
         ))}
       </ul>

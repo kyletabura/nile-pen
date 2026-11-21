@@ -74,7 +74,7 @@ export default function Stories({ brief = false }) {
         {rows == null ? <SkeletonRows n={7} /> : shown.length ? (
           <div className="table-wrap">
             <table className="table">
-              <thead><tr><th>{brief ? 'Update' : 'Story'}</th><th>Topic</th><th className="hide-mobile">{brief ? 'Source' : 'Author'}</th><th>Date</th><th>Status</th></tr></thead>
+              <thead><tr><th>{brief ? 'Update' : 'Story'}</th><th className="hide-mobile">Topic</th><th className="hide-mobile">{brief ? 'Source' : 'Author'}</th><th className="hide-mobile">Date</th><th>Status</th></tr></thead>
               <tbody>
                 {shown.map((r) => (
                   <tr key={r.id} className="clickable" onClick={() => nav(base + '/' + r.id)}>
@@ -82,13 +82,14 @@ export default function Stories({ brief = false }) {
                       <Link to={base + '/' + r.id} className="story-cell" style={{ color: 'inherit', textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>
                         <Thumb article={r} />
                         <span className="grow"><span className="t">{r.title}</span>
+                          <span className="faint show-mobile">{topicName((r.topics || [])[0])} · {fmtDate(r.published_on)}</span>
                           {r.featured && <span className="faint row" style={{ gap: 4, marginTop: 2 }}><Star size={13} fill="#c4262e" color="#c4262e" />Featured on homepage</span>}
                         </span>
                       </Link>
                     </td>
-                    <td className="nowrap small">{topicName((r.topics || [])[0])}{r.topics?.length > 1 && <span className="faint"> +{r.topics.length - 1}</span>}</td>
+                    <td className="nowrap small hide-mobile">{topicName((r.topics || [])[0])}{r.topics?.length > 1 && <span className="faint"> +{r.topics.length - 1}</span>}</td>
                     <td className="small hide-mobile nowrap">{brief ? r.source_label : r.author}</td>
-                    <td className="nowrap small">{fmtDate(r.published_on)}</td>
+                    <td className="nowrap small hide-mobile">{fmtDate(r.published_on)}</td>
                     <td><Badge status={r.status} /></td>
                   </tr>
                 ))}

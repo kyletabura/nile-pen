@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Mail, Archive, Trash2, Reply, Clock, Undo2 } from 'lucide-react';
+import { Mail, Archive, Trash2, Reply, Clock, Undo2, ArrowLeft } from 'lucide-react';
 import { supabase, must } from '../lib/supabase.js';
 import { bump } from '../lib/auth.jsx';
 import { Badge, Empty, Initials, SkeletonRows, confirmAction, useToast } from '../components/ui.jsx';
@@ -38,7 +38,7 @@ export default function Messages() {
       <div className="page-head">
         <div><h1 className="page-title">Messages</h1><p>From the Contact and Advertise pages. Replies open in your email app.</p></div>
       </div>
-      <div className="split">
+      <div className={'split' + (sel ? ' has-sel' : '')}>
         <section className="card">
           <div className="card-head" style={{ flexWrap: 'wrap' }}>
             <div className="seg">
@@ -68,6 +68,7 @@ export default function Messages() {
         <section className="card">
           {sel ? (
             <div className="detail">
+              <Link to="/messages" className="btn ghost sm show-mobile back-link"><ArrowLeft />All messages</Link>
               <div className="spread">
                 <div className="row"><Initials name={sel.name} size={42} /><div><div className="h2">{sel.name}</div><div className="faint">{sel.email}</div></div></div>
                 <Badge status={sel.subject === 'Advertising' ? 'live' : 'read'}>{sel.subject}</Badge>

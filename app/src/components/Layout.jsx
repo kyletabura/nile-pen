@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FileText, Radio, Inbox, Mail, Users, Image as ImageIcon, Tags, UserCog, Settings as Cog,
-  Search, ExternalLink, Menu, LogOut, UploadCloud, Loader2, Plus,
+  Search, ExternalLink, Menu, LogOut, UploadCloud, Loader2, Plus, BookOpen,
 } from 'lucide-react';
 import { useAuth, useStats, bump } from '../lib/auth.jsx';
 import { supabase, requestPublish, SITE_URL } from '../lib/supabase.js';
 import { Initials, useToast } from './ui.jsx';
+import { setStartUser } from './GettingStarted.jsx';
 import { timeAgo } from '../lib/util.js';
 
 const NAV = [
@@ -21,6 +22,8 @@ const NAV = [
   { to: '/topics', label: 'Topics', icon: Tags },
   { to: '/team', label: 'Team', icon: UserCog },
   { to: '/settings', label: 'Settings', icon: Cog },
+  { label: 'Help' },
+  { to: '/guide', label: 'Guide', icon: BookOpen },
 ];
 
 export default function Layout() {
@@ -31,6 +34,7 @@ export default function Layout() {
   const loc = useLocation();
   useEffect(() => setNavOpen(false), [loc.pathname]);
   useIdleSignOut(signOut);
+  setStartUser(editor?.user_id);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 4);
     window.addEventListener('scroll', on, { passive: true });

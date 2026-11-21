@@ -18,6 +18,7 @@ import MediaPage from './pages/MediaPage.jsx';
 import Topics from './pages/Topics.jsx';
 import Team from './pages/Team.jsx';
 import Settings from './pages/Settings.jsx';
+import Guide from './pages/Guide.jsx';
 
 function Gate() {
   const { loading, session, editor, signOut, needsMfa, recovery, reload, endRecovery } = useAuth();
@@ -68,6 +69,7 @@ const router = createBrowserRouter([
       { path: 'topics', element: <Topics /> },
       { path: 'team', element: <Team /> },
       { path: 'settings', element: <Settings /> },
+      { path: 'guide', element: <Guide /> },
       { path: 'reset-password', element: <Navigate to="/" replace /> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

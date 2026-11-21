@@ -4,6 +4,7 @@ import { supabase, mediaUrl, must } from '../lib/supabase.js';
 import { loadImage, render, toBlob } from '../lib/image.js';
 import { slugify } from '../lib/util.js';
 import { Btn, Dialog, Empty, SkeletonRows, useToast } from './ui.jsx';
+import { markGuideStep } from './GettingStarted.jsx';
 
 const ASPECTS = [['Original', null], ['Wide 16:9', 16 / 9], ['Landscape 4:3', 4 / 3], ['Square', 1], ['Portrait 4:5', 4 / 5]];
 export const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
@@ -14,6 +15,7 @@ export async function uploadBlob(blob, baseName) {
   const ext = blob.type === 'image/gif' ? 'gif' : blob.type === 'image/png' ? 'png' : blob.type === 'image/jpeg' ? 'jpg' : 'webp';
   const path = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${slugify(baseName || 'image').slice(0, 50) || 'image'}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   must(await supabase.storage.from('media').upload(path, blob, { contentType: blob.type, cacheControl: '31536000', upsert: false }));
+  markGuideStep('photo');
   return { path, url: mediaUrl(path) };
 }
 

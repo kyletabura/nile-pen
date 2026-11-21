@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Inbox, Check, X, Mail, MapPin, Clock, PenLine, Trash2, Undo2, FileText } from 'lucide-react';
+import { Inbox, Check, X, Mail, MapPin, Clock, PenLine, Trash2, Undo2, FileText, ArrowLeft } from 'lucide-react';
 import { supabase, must } from '../lib/supabase.js';
 import { useAuth, bump } from '../lib/auth.jsx';
 import { Badge, Btn, Dialog, Empty, Initials, SkeletonRows, confirmAction, useToast } from '../components/ui.jsx';
+import { markGuideStep } from '../components/GettingStarted.jsx';
 import { slugify, timeAgo, today, words } from '../lib/util.js';
 
 const REASONS = ['Not the right fit for our sections', 'We have covered this recently', 'Needs a clearer angle or stronger sourcing', 'Too late to be timely'];
@@ -32,6 +33,7 @@ export default function Pitches() {
   useEffect(() => { if (rows && !id && list[0] && window.innerWidth > 900) nav('/pitches/' + list[0].id, { replace: true }); }, [rows, tab]);
 
   const update = async (patch) => {
+    markGuideStep('pitch');
     must(await supabase.from('submissions').update({ ...patch, reviewed_at: new Date().toISOString(), reviewed_by: editor.user_id }).eq('id', sel.id));
     setRows((rs) => rs.map((r) => (r.id === sel.id ? { ...r, ...patch } : r)));
     bump();
@@ -71,7 +73,7 @@ export default function Pitches() {
       <div className="page-head">
         <div><h1 className="page-title">Pitches</h1><p>Story ideas sent through “Write for The Nile Pen”. Approve one to turn it into a draft.</p></div>
       </div>
-      <div className="split">
+      <div className={'split' + (sel ? ' has-sel' : '')}>
         <section className="card">
           <div className="card-head">
             <div className="seg" role="tablist">
@@ -100,6 +102,7 @@ export default function Pitches() {
         <section className="card">
           {sel ? (
             <div className="detail">
+              <Link to="/pitches" className="btn ghost sm show-mobile back-link"><ArrowLeft />All pitches</Link>
               <div className="spread" style={{ alignItems: 'flex-start' }}>
                 <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
                   <Badge status={sel.status}>{sel.status === 'new' ? 'Needs review' : sel.status === 'approved' ? 'Approved' : 'Declined'}</Badge>
