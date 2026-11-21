@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, KeyRound, Trash2, Copy, ShieldCheck, Info } from 'lucide-react';
+import { UserPlus, KeyRound, Trash2, Copy, ShieldCheck, ShieldOff, Info } from 'lucide-react';
 import { supabase, must, friendly } from '../lib/supabase.js';
 import { useAuth } from '../lib/auth.jsx';
 import { Badge, Btn, Dialog, Initials, SkeletonRows, confirmAction, useToast } from '../components/ui.jsx';
@@ -36,6 +36,10 @@ export default function Team() {
     const pw = tempPassword();
     try { await call({ action: 'reset', user_id: r.user_id, password: pw }); setShown({ email: r.email, password: pw, reset: true }); } catch (e) { toast.error(e); }
   };
+  const resetMfa = async (r) => {
+    if (!(await confirmAction({ title: 'Reset two-step verification for ' + (r.name || r.email) + '?', body: 'Use this if they lost the phone with their authenticator app. They can sign in with just their password and should set up two-step verification again straight away.', confirm: 'Reset two-step', danger: true }))) return;
+    try { const res = await call({ action: 'reset_mfa', user_id: r.user_id }); toast(res.removed ? 'Two-step verification reset.' : 'They did not have two-step verification set up.'); } catch (e) { toast.error(e); }
+  };
   const remove = async (r) => {
     if (!(await confirmAction({ title: 'Remove ' + (r.name || r.email) + '?', body: 'They lose access to the dashboard immediately. Stories they wrote stay published.', confirm: 'Remove from team', danger: true }))) return;
     try { await call({ action: 'remove', user_id: r.user_id }); toast('Removed from the team.'); load(); } catch (e) { toast.error(e); }
@@ -66,6 +70,7 @@ export default function Team() {
                 <td className="small hide-mobile">{fmtDate(r.created_at)}</td>
                 {isOwner && <td style={{ textAlign: 'right' }} className="nowrap">
                   <button className="btn sm" onClick={() => reset(r)}><KeyRound />Reset password</button>
+                  {r.user_id !== editor.user_id && <button className="btn sm" onClick={() => resetMfa(r)}><ShieldOff />Reset two-step</button>}
                   {r.user_id !== editor.user_id && <button className="btn sm icon ghost" aria-label={'Remove ' + r.email} onClick={() => remove(r)}><Trash2 /></button>}
                 </td>}
               </tr>))}
@@ -82,9 +87,9 @@ export default function Team() {
           <div className="meta-grid"><div><div className="k">Sign in at</div><div className="v">app.thenilepen.com</div></div><div><div className="k">Email</div><div className="v">{shown.email}</div></div></div>
           <div className="spread" style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--sunk)' }}>
             <code style={{ fontSize: 17, fontWeight: 800, letterSpacing: '0.02em' }}>{shown.password}</code>
-            <button className="btn sm" onClick={async () => { await navigator.clipboard.writeText(`The Nile Pen newsroom\nhttps://app.thenilepen.com\nEmail: ${shown.email}\nTemporary password: ${shown.password}\n\nPlease change it under Settings after you sign in.`); toast('Copied. Send it privately, for example in a WhatsApp message.'); }}><Copy />Copy sign-in details</button>
+            <button className="btn sm" onClick={async () => { await navigator.clipboard.writeText(`The Nile Pen newsroom\nhttps://app.thenilepen.com\nEmail: ${shown.email}\nTemporary password: ${shown.password}\n\nYou'll be asked to choose your own password when you sign in.`); toast('Copied. Send it privately, for example in a WhatsApp message.'); }}><Copy />Copy sign-in details</button>
           </div>
-          <p className="faint" style={{ margin: 0 }}>Ask them to change the password under Settings after signing in.</p>
+          <p className="faint" style={{ margin: 0 }}>The temporary password only works to choose a new one: they're asked to set their own password the moment they sign in.</p>
         </>}
       </Dialog>
     </>

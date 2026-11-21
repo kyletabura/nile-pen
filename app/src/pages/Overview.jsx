@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Radio, PenLine, Inbox, Users, Mail, ArrowRight, CheckCircle2, UploadCloud, Plus } from 'lucide-react';
+import { FileText, Radio, PenLine, Inbox, Users, Mail, ArrowRight, CheckCircle2, UploadCloud, Plus, ShieldAlert } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import { useAuth, useStats } from '../lib/auth.jsx';
 import { Badge, Empty, SkeletonRows, Thumb } from '../components/ui.jsx';
@@ -11,6 +11,8 @@ export default function Overview() {
   const { stats } = useStats() || {};
   const [queue, setQueue] = useState(null);
   const [recent, setRecent] = useState(null);
+  const [mfaOff, setMfaOff] = useState(false);
+  useEffect(() => { supabase.auth.mfa.listFactors().then(({ data }) => setMfaOff(!(data?.totp || []).some((f) => f.status === 'verified'))); }, []);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +55,13 @@ export default function Overview() {
           <Link className="btn primary" to="/stories/new"><Plus />Write a story</Link>
         </div>
       </div>
+
+      {mfaOff && (
+        <div className="note spread" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
+          <span className="row" style={{ alignItems: 'flex-start' }}><ShieldAlert /><span><b>Protect your account.</b> Turn on two-step verification so a stolen password alone can't get into the newsroom. It takes two minutes with your phone.</span></span>
+          <Link className="btn sm dark" to="/settings">Turn it on</Link>
+        </div>
+      )}
 
       <div className="grid kpis">
         {kpis.map((k) => (

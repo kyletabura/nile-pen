@@ -30,6 +30,7 @@ export default function Layout() {
   const [scrolled, setScrolled] = useState(false);
   const loc = useLocation();
   useEffect(() => setNavOpen(false), [loc.pathname]);
+  useIdleSignOut(signOut);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 4);
     window.addEventListener('scroll', on, { passive: true });
@@ -60,7 +61,7 @@ export default function Layout() {
               <div className="ellipsis" style={{ fontWeight: 800, fontSize: 14 }}>{editor?.name || 'Editor'}</div>
               <div className="ellipsis faint">{editor?.role === 'owner' ? 'Owner' : 'Editor'}</div>
             </div>
-            <button className="btn ghost icon sm" onClick={signOut} aria-label="Sign out" title="Sign out"><LogOut /></button>
+            <button className="btn ghost icon sm" onClick={() => signOut()} aria-label="Sign out" title="Sign out"><LogOut /></button>
           </div>
         </div>
       </aside>
@@ -75,6 +76,34 @@ export default function Layout() {
       </div>
     </div>
   );
+}
+
+/** Signs out after 60 minutes without any activity in any open dashboard tab. */
+const IDLE_MS = 60 * 60 * 1000;
+function useIdleSignOut(signOut) {
+  useEffect(() => {
+    const KEY = 'np-last-active';
+    const mark = () => { try { localStorage.setItem(KEY, String(Date.now())); } catch { /* ignore */ } };
+    let last = 0;
+    const onActivity = () => { const n = Date.now(); if (n - last > 15000) { last = n; mark(); } };
+    const check = () => {
+      let at = Date.now();
+      try { at = Number(localStorage.getItem(KEY)) || at; } catch { /* ignore */ }
+      if (Date.now() - at > IDLE_MS) {
+        try { sessionStorage.setItem('np-notice', 'You were signed out after an hour without activity, to keep the newsroom safe.'); } catch { /* ignore */ }
+        signOut();
+        return true;
+      }
+      return false;
+    };
+    // coming back to a tab or browser that was left signed in for over an hour also signs out
+    if (check()) return undefined;
+    mark();
+    const evs = ['pointerdown', 'keydown', 'scroll', 'visibilitychange'];
+    evs.forEach((e) => window.addEventListener(e, onActivity, { passive: true }));
+    const t = setInterval(check, 30000);
+    return () => { clearInterval(t); evs.forEach((e) => window.removeEventListener(e, onActivity)); };
+  }, [signOut]);
 }
 
 function GlobalSearch() {

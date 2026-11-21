@@ -16,6 +16,11 @@
 The Submit-a-story, Contact/Advertise and newsletter forms on the public site save straight into Supabase (`submissions`, `messages`, `subscribers`). The public can add rows but never read them. A honeypot field and a per-address rate limit block simple spam. Editors handle everything under **Pitches**, **Messages** and **Subscribers**.
 
 ## Security
+- Sign-in: email + password. New and reset accounts get a temporary password that only lets them choose their own (12+ characters, strength rules); the database refuses everything else until they do.
+- Two-step verification (authenticator app) per person under Settings. Once on, the database only accepts sessions that passed the code check (`aal2`), so a stolen password alone sees nothing.
+- Forgot password: emailed reset link to `/reset-password`. Owners can also issue a temporary password or reset someone's two-step from Team.
+- Repeated wrong passwords pause sign-in in the browser (1 min, doubling up to 30 min) on top of Supabase's server-side rate limits. One hour without activity signs the dashboard out. "Sign out everywhere" ends every session.
+- Owners see recent sign-ins and account changes under Settings → Sign-in activity.
 - Row-level security on every table; only people listed in `editors` can read submissions or change content.
 - Team accounts are created and reset only through the `manage-editors` edge function, which checks the caller is an owner.
 - Images go to the public `media` bucket; only editors can upload or delete (10 MB limit, images only).

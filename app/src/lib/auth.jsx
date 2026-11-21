@@ -4,21 +4,37 @@ import { supabase } from './supabase.js';
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
 
-export function AuthProvider({ children }) {
-  const [state, setState] = useState({ loading: true, session: null, editor: null });
+const EMPTY = { loading: false, session: null, editor: null, needsMfa: false, recovery: false };
 
-  const load = useCallback(async (session) => {
-    if (!session) return setState({ loading: false, session: null, editor: null });
-    const { data } = await supabase.from('editors').select('*').eq('user_id', session.user.id).maybeSingle();
-    setState({ loading: false, session, editor: data || null });
+export function AuthProvider({ children }) {
+  const [state, setState] = useState({ ...EMPTY, loading: true });
+
+  const load = useCallback(async (session, extra = {}) => {
+    if (!session) return setState({ ...EMPTY, ...extra });
+    const [{ data: editor }, { data: aal }] = await Promise.all([
+      supabase.from('editors').select('*').eq('user_id', session.user.id).maybeSingle(),
+      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    ]);
+    // needsMfa: the account has an authenticator but this session has not passed the code check yet
+    const needsMfa = !!aal && aal.nextLevel === 'aal2' && aal.currentLevel !== 'aal2';
+    setState((s) => ({ ...EMPTY, session, editor: editor || null, needsMfa, recovery: extra.recovery ?? s.recovery }));
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => load(data.session));
+    const recovering = window.location.pathname === '/reset-password';
+    supabase.auth.getSession().then(({ data }) => load(data.session, { recovery: recovering && !!data.session }));
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') setState({ loading: false, session: null, editor: null });
-      else if (event === 'SIGNED_IN' || event === 'USER_UPDATED') load(session);
-      else if (event === 'TOKEN_REFRESHED') setState((s) => ({ ...s, session }));
+      // a real sign-in restarts the inactivity clock (see useIdleSignOut in Layout)
+      if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY' || event === 'MFA_CHALLENGE_VERIFIED') {
+        try { localStorage.setItem('np-last-active', String(Date.now())); } catch { /* ignore */ }
+      }
+      // run outside the callback: calling Supabase inside it can deadlock the auth client
+      setTimeout(() => {
+        if (event === 'SIGNED_OUT') setState(EMPTY);
+        else if (event === 'PASSWORD_RECOVERY') load(session, { recovery: true });
+        else if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'MFA_CHALLENGE_VERIFIED') load(session);
+        else if (event === 'TOKEN_REFRESHED') setState((s) => ({ ...s, session }));
+      }, 0);
     });
     return () => sub.subscription.unsubscribe();
   }, [load]);
@@ -26,8 +42,9 @@ export function AuthProvider({ children }) {
   const value = {
     ...state,
     isOwner: state.editor?.role === 'owner',
-    reload: () => supabase.auth.getSession().then(({ data }) => load(data.session)),
-    signOut: () => supabase.auth.signOut(),
+    reload: (extra) => supabase.auth.getSession().then(({ data }) => load(data.session, extra)),
+    endRecovery: () => { window.history.replaceState(null, '', '/'); return supabase.auth.getSession().then(({ data }) => load(data.session, { recovery: false })); },
+    signOut: (scope = 'local') => supabase.auth.signOut({ scope }),
   };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

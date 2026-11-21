@@ -1,20 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Globe, KeyRound, UserRound, History } from 'lucide-react';
-import { supabase, must, friendly, requestPublish } from '../lib/supabase.js';
+import { Globe, KeyRound, UserRound, History, ShieldCheck, LogOut, Activity } from 'lucide-react';
+import { supabase, must, requestPublish } from '../lib/supabase.js';
 import { useAuth, bump } from '../lib/auth.jsx';
-import { Btn, Switch, SkeletonRows, useToast } from '../components/ui.jsx';
+import { Btn, Switch, SkeletonRows, confirmAction, useToast } from '../components/ui.jsx';
+import { MfaSettings, PasswordForm } from '../components/Security.jsx';
 import { isUrl, timeAgo } from '../lib/util.js';
 
 const SOCIAL = [['instagram', 'Instagram', 'https://www.instagram.com/thenilepen'], ['x', 'X / Twitter', 'https://x.com/thenilepen'], ['facebook', 'Facebook', 'https://www.facebook.com/thenilepen'], ['linkedin', 'LinkedIn', 'https://www.linkedin.com/company/thenilepen'], ['whatsapp', 'WhatsApp Channel', 'https://whatsapp.com/channel/…']];
 
 export default function Settings() {
   const toast = useToast();
-  const { editor, reload } = useAuth();
+  const { editor, reload, isOwner, signOut } = useAuth();
+  const [pwKey, setPwKey] = useState(0);
   const [site, setSite] = useState(null);
   const [orig, setOrig] = useState('');
   const [busy, setBusy] = useState('');
   const [name, setName] = useState(editor?.name || '');
-  const [pw, setPw] = useState({ a: '', b: '' });
   const [log, setLog] = useState(null);
 
   useEffect(() => { (async () => {
@@ -41,16 +42,6 @@ export default function Settings() {
     setBusy('name');
     try { must(await supabase.from('editors').update({ name: name.trim() }).eq('user_id', editor.user_id)); await reload(); toast('Name updated.'); }
     catch (e) { toast.error(e); } finally { setBusy(''); }
-  };
-
-  const savePw = async () => {
-    if (pw.a.length < 10) return toast.error('Use at least 10 characters.');
-    if (pw.a !== pw.b) return toast.error('The two passwords do not match.');
-    setBusy('pw');
-    const { error } = await supabase.auth.updateUser({ password: pw.a });
-    setBusy('');
-    if (error) return toast.error(friendly(error));
-    setPw({ a: '', b: '' }); toast('Password changed.');
   };
 
   return (
@@ -84,13 +75,24 @@ export default function Settings() {
             </div>
           </section>
           <section className="card">
+            <div className="card-head"><h2 className="h2 row"><ShieldCheck size={18} />Two-step verification</h2></div>
+            <div className="card-pad"><MfaSettings onChange={(s) => toast(s === 'on' ? 'Two-step verification is on.' : 'Two-step verification is off.')} /></div>
+          </section>
+          <section className="card">
             <div className="card-head"><h2 className="h2 row"><KeyRound size={18} />Change password</h2></div>
+            <div className="card-pad"><PasswordForm key={pwKey} email={editor?.email} submitLabel="Change password" onDone={() => { setPwKey((k) => k + 1); toast('Password changed.'); }} /></div>
+          </section>
+          <section className="card">
+            <div className="card-head"><h2 className="h2 row"><LogOut size={18} />Sessions</h2></div>
             <div className="card-pad col" style={{ gap: 12 }}>
-              <label className="field"><span>New password</span><input className="input" type="password" autoComplete="new-password" value={pw.a} onChange={(e) => setPw({ ...pw, a: e.target.value })} /><small>At least 10 characters.</small></label>
-              <label className="field"><span>Type it again</span><input className="input" type="password" autoComplete="new-password" value={pw.b} onChange={(e) => setPw({ ...pw, b: e.target.value })} /></label>
-              <Btn className="sm dark" busy={busy === 'pw'} disabled={!pw.a} onClick={savePw} style={{ alignSelf: 'flex-start' }}>Change password</Btn>
+              <p className="muted" style={{ margin: 0 }}>Signed in on a shared or lost device? Sign out everywhere, including this browser. You stay signed out until you enter your password again.</p>
+              <Btn className="sm" busy={busy === 'out'} style={{ alignSelf: 'flex-start' }} onClick={async () => {
+                if (!(await confirmAction({ title: 'Sign out on every device?', body: 'Anyone using your account on another phone or computer is signed out immediately.', confirm: 'Sign out everywhere', danger: true }))) return;
+                setBusy('out'); await signOut('global');
+              }}><LogOut />Sign out everywhere</Btn>
             </div>
           </section>
+          {isOwner && <ActivityCard />}
           <section className="card">
             <div className="card-head"><h2 className="h2 row"><History size={18} />Site updates</h2></div>
             {log == null ? <SkeletonRows n={3} h={28} /> : (
@@ -104,5 +106,32 @@ export default function Settings() {
         </div>
       </div>
     </>
+  );
+}
+
+const ACTIONS = {
+  login: 'Signed in', logout: 'Signed out', user_recovery_requested: 'Asked for a password reset', user_updated_password: 'Changed password',
+  user_modified: 'Account updated', token_revoked: 'Session ended', user_deleted: 'Account removed', user_signedup: 'Account created',
+  mfa_challenge_verified: 'Passed two-step check', factor_in_progress: 'Started two-step setup', factor_deleted: 'Turned off two-step',
+};
+
+/** Owners only: recent sign-ins and account changes, so an unfamiliar login stands out. */
+function ActivityCard() {
+  const [rows, setRows] = useState(null);
+  useEffect(() => { supabase.rpc('security_activity', { max_rows: 30 }).then(({ data }) => setRows(data || [])); }, []);
+  return (
+    <section className="card">
+      <div className="card-head"><h2 className="h2 row"><Activity size={18} />Sign-in activity</h2><span className="faint">Owners only</span></div>
+      {rows == null ? <SkeletonRows n={4} h={28} /> : rows.length ? (
+        <div className="table-wrap"><table className="table">
+          <thead><tr><th>When</th><th>Who</th><th>What</th><th className="hide-mobile">Network address</th></tr></thead>
+          <tbody>{rows.map((r, i) => (
+            <tr key={i}><td className="small nowrap">{timeAgo(r.at)}</td><td className="small">{r.email || '—'}</td>
+              <td className="small">{ACTIONS[r.action] || r.action}</td><td className="small faint hide-mobile">{r.ip || '—'}</td></tr>
+          ))}</tbody>
+        </table></div>
+      ) : <p className="faint" style={{ padding: 20, margin: 0 }}>No activity recorded yet.</p>}
+      <p className="faint" style={{ margin: 0, padding: '0 20px 16px' }}>See a sign-in you don't recognise? Reset that person's password on the Team page and ask them to turn on two-step verification.</p>
+    </section>
   );
 }
